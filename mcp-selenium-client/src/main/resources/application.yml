@@ -1,0 +1,51 @@
+# application.yml（单文件可切换 HTTP / STDIO）
+# ——————————————————————————————————————————————
+# 切换方式：
+# ① 默认启用 HTTP：mcp.transport: http（把 stdio 那行注释）
+#    想切 STDIO：把 ① 的 http 注释掉，放开 stdio 那行
+# ② 在 mcp.server 下：HTTP 打开 httpBaseUrl；STDIO 打开 command
+# ——————————————————————————————————————————————
+server:
+  port: 19101
+
+mcp:
+  clientId: "demo-web-client"
+
+  # ① 传输通道（二选一，互斥）
+  #transport: http        # ← 默认：HTTP
+  transport: stdio     # ← 切到 STDIO 时打开本行，并把上面 http 注释掉
+
+  server:
+    # ② HTTP 与 STDIO 的服务端配置（二选一，互斥）
+    #httpBaseUrl: "http://localhost:18081"    # ← HTTP 用，STDIO 时注释此行
+    command:
+      list:
+        - java
+        - -jar
+        - /Users/path/mcp-selenium-server-selenium-manager/target/mcp-selenium-server-1.0.0.jar
+        - --spring.main.web-application-type=none
+        - --spring.main.banner-mode=off
+
+    #command: "java,-jar,/Users/jiangjiangyingxia/Documents/mcp-selenium-server-selenium-manager/target/mcp-selenium-server-1.0.0.jar,--spring.main.web-application-type=none,--spring.main.banner-mode=off"  # ← STDIO 用，HTTP 时注释此行
+
+# —— Azure OpenAI（Spring AI）——
+spring:
+  ai:
+    azure:
+      openai:
+        # 建议用环境变量注入；未设置时会使用这里的回退默认值（自行替换为安全值或留空）
+        api-key: ${AZURE_OPENAI_API_KEY:${OPENAI_API_KEY:}}
+        endpoint: ${AZURE_OPENAI_ENDPOINT:${OPENAI_API_BASE:}}
+        chat:
+          options:
+            # 注意：这里是 Azure 的“部署名”（Deployment name），不是模型名
+            deployment-name: ${AZURE_OPENAI_DEPLOYMENT:${OPENAI_DEPLOYMENT_ID:gpt-5}}
+            api-version: ${AZURE_OPENAI_API_VERSION:${OPENAI_API_VERSION:2025-01-01-preview}}
+            temperature: 1.0
+            max_completion_tokens: 20480
+
+logging:
+  level:
+    root: info
+    # 如需查看与 LLM 的交互细节，临时打开：
+    #org.springframework.ai: DEBUG

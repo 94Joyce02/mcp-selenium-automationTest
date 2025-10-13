@@ -1,0 +1,17 @@
+logging:
+  level:
+    root: INFO
+
+server:
+  port: 18081
+
+
+selenium:
+  default:
+    headless: false
+    download-dir: ./downloads
+    screenshot-dir: ./screens
+
+webdriver:
+  auto-setup: true
+  browser: chrome

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- 只保留指向根POM的 parent -->
+  <parent>
+    <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>mcp-selenium-automationTest</artifactId>
+    <version>1.0.0</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <groupId>com.example.mcp</groupId>
+  <artifactId>mcp-selenium-server</artifactId>
+  <version>1.0.0</version>
+  <name>MCP Selenium Server</name>
+  <description>Selenium automation server for MCP</description>
+
+  <!-- 建议用根POM里的 <properties> 统一JDK版本，这里可以不写。
+       如果你坚持Java 18，这里保留；否则删掉，改根POM为 17 或 21。 -->
+  <dependencies>
+    <!-- 若是Web服务，建议用 starter-web；仅核心则 starter 也行 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>4.21.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.bonigarcia</groupId>
+      <artifactId>webdrivermanager</artifactId>
+      <version>5.8.0</version>
+    </dependency>
+
+    <!-- 测试（可选） -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- 版本走根POM的 pluginManagement，无需再写 <version> -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>
