@@ -19,12 +19,14 @@ public class StdioInvoker implements TransportInvoker {
             boolean stopOnError,
             String sessionId
     ) throws IOException {
+        final long defaultTimeoutMs = 180_000; // default 3 minutes to accommodate driver downloads/startup
         List<Map<String, Object>> results = new ArrayList<>();
         String sid = (sessionId != null && !sessionId.isBlank()) ? sessionId : UUID.randomUUID().toString();
 
         for (int i = 0; i < actions.size(); i++) {
             Map<String, Object> action = actions.get(i);
-            Map<String, Object> resp = stdio.rpcExecuteOne(action, sid, i, 60_000);
+            boolean sessionDone = (i == actions.size() - 1);
+            Map<String, Object> resp = stdio.rpcExecuteOne(action, sid, i, sessionDone, defaultTimeoutMs);
             results.add(resp);
 
             boolean ok = Boolean.TRUE.equals(resp.get("ok")) // 建议服务端严格返回 ok=true/false

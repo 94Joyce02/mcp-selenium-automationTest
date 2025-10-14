@@ -14,11 +14,14 @@ public class ActionPlan {
         public String by;
 
         // 扩展字段（用于更丰富的动作参数）
-        public String  browser;   // "chrome" | "edge" | "firefox"
-        public Boolean headless;  // true | false
-        public String  filename;  // for screenshot
+        public String browser; // "chrome" | "edge" | "firefox"
+        public Boolean headless; // true | false
+        public String filename; // for screenshot
     }
 
     private final List<Action> actions = new ArrayList<>();
-    public List<Action> getActions() { return actions; }
+
+    public List<Action> getActions() {
+        return actions;
+    }
 }

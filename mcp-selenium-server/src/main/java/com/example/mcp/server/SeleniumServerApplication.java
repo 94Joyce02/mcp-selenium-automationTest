@@ -136,7 +136,14 @@ public class SeleniumServerApplication implements CommandLineRunner {
                     case "type" -> {
                         ensureDriver();
                         WebElement el = findElement(a);
-                        el.clear();
+                        try {
+                            String tag = el.getTagName();
+                            if (tag == null || (!"select".equalsIgnoreCase(tag) && !"option".equalsIgnoreCase(tag))) {
+                                el.clear();
+                            }
+                        } catch (InvalidElementStateException ignored) {
+                            // some widgets (e.g., date picker/select) do not support clear; skip
+                        }
                         el.sendKeys(a.getText() == null ? "" : a.getText());
                         results.put("type", "ok");
                     }

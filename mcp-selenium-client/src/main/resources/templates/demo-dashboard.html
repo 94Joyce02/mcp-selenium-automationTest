@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>MCP Demo Portal - Automation Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --primary: #1d4ed8;
+      --accent: #14b8a6;
+      --warning: #f97316;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: linear-gradient(135deg, #1d4ed8, #4338ca);
+      color: #fff;
+      padding: 1.5rem 3rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 10px 35px rgba(15, 23, 42, 0.25);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.9rem;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0.35rem 0 0;
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .top-actions {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 0.65rem 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.primary { background: #fff; color: var(--primary); }
+    .btn.accent { background: rgba(20, 184, 166, 0.15); color: #99f6e4; }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 2rem;
+      padding: 2.5rem 3rem 3rem;
+      flex: 1;
+    }
+    nav {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 1.5rem;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      position: sticky;
+      top: 120px;
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+    }
+    nav h2 {
+      margin: 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    nav button {
+      border: none;
+      background: none;
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      font-size: 0.98rem;
+      border-radius: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    nav button:hover {
+      background: rgba(29, 78, 216, 0.08);
+      color: var(--text);
+    }
+    nav .badge {
+      background: rgba(29, 78, 216, 0.12);
+      color: var(--primary);
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    main.dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    .search-card,
+    .table-card,
+    .insight-card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 1.75rem 2rem;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.07);
+    }
+    .search-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .search-header h2 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+    .filters {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .filters button {
+      padding: 0.45rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(248, 250, 252, 0.8);
+      cursor: pointer;
+    }
+    .search-bar {
+      margin-top: 1.25rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .search-bar input[type="search"] {
+      flex: 1;
+      min-width: 220px;
+      padding: 0.9rem 1rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      font-size: 1rem;
+    }
+    .search-bar input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.1);
+    }
+    .search-bar button {
+      padding: 0.9rem 1.6rem;
+      border-radius: 14px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .search-results {
+      margin-top: 1.5rem;
+      display: none;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .pill {
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      background: rgba(20, 184, 166, 0.12);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    thead th {
+      text-align: left;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s ease;
+    }
+    tbody tr:hover {
+      background: rgba(248, 250, 252, 0.7);
+    }
+    td {
+      padding: 0.9rem 0.35rem;
+      vertical-align: middle;
+      font-size: 0.98rem;
+    }
+    td .status {
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+    .status.pending { background: rgba(249, 115, 22, 0.12); color: var(--warning); }
+    .status.success { background: rgba(20, 184, 166, 0.12); color: var(--accent); }
+    .status.blocked { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .actions button {
+      border: none;
+      background: rgba(226, 232, 240, 0.5);
+      border-radius: 10px;
+      padding: 0.45rem 0.75rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .metric-card {
+      background: linear-gradient(135deg, rgba(29, 78, 216, 0.08), rgba(20, 184, 166, 0.08));
+      border-radius: 18px;
+      padding: 1.1rem;
+    }
+    .metric-card h3 {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .metric-card strong {
+      display: block;
+      margin-top: 0.4rem;
+      font-size: 1.6rem;
+    }
+    .timeline {
+      margin-top: 2rem;
+      border-left: 2px dashed var(--border);
+      padding-left: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .timeline-item {
+      position: relative;
+    }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -1.85rem;
+      top: 0.25rem;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal {
+      width: min(520px, 90%);
+      background: var(--card);
+      border-radius: 18px;
+      padding: 1.75rem;
+      box-shadow: 0 25px 65px rgba(15, 23, 42, 0.35);
+    }
+    .modal h3 {
+      margin: 0 0 1rem;
+    }
+    .modal .form-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .modal label { font-weight: 600; display: block; margin-bottom: 0.3rem; }
+    .modal input,
+    .modal select,
+    .modal textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.8rem 0.9rem;
+      font-size: 1rem;
+    }
+    .modal textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      background: var(--card);
+      border-radius: 14px;
+      padding: 1rem 1.4rem;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+      display: none;
+      gap: 0.75rem;
+      align-items: center;
+      font-weight: 600;
+    }
+    footer {
+      padding: 1.5rem 3rem;
+      background: #0f172a;
+      color: rgba(255, 255, 255, 0.75);
+    }
+    footer a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+    footer a:hover { text-decoration: underline; }
+    @media (max-width: 1024px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      nav {
+        position: static;
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1 data-testid="dashboard-heading">Automation Mission Control</h1>
+  <p>Trigger Selenium workflows, inspect runs, and orchestrate complex scenarios in a single console.</p>
+  <div class="top-actions">
+    <button class="btn primary" id="btn-add-task" data-testid="add-task-btn">Create scripted task</button>
+    <button class="btn accent" data-testid="run-suite-btn">▶ Run nightly suite</button>
+    <button class="btn" data-testid="open-reports-btn">📈 View reports</button>
+    <button class="btn" data-testid="open-alerts-btn">🔔 Alerts (3)</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav aria-label="Action sidebar">
+    <section>
+      <h2>Quick access</h2>
+      <button data-testid="nav-overview">Overview <span class="badge">5</span></button>
+      <button data-testid="nav-suites">Suites <span class="badge">12</span></button>
+      <button data-testid="nav-schedules">Schedules <span class="badge">4</span></button>
+      <button data-testid="nav-connectors">Connectors</button>
+    </section>
+    <section>
+      <h2>Automation</h2>
+      <button data-testid="nav-browsers">Browser grid</button>
+      <button data-testid="nav-variables">Environment variables</button>
+      <button data-testid="nav-webhooks">Webhook triggers</button>
+    </section>
+    <section>
+      <h2>Resources</h2>
+      <button data-testid="nav-docs">Documentation</button>
+      <button data-testid="nav-support">Contact support</button>
+    </section>
+  </nav>
+
+  <main class="dashboard">
+    <section class="search-card" id="search-card">
+      <div class="search-header">
+        <div>
+          <h2>Find automation tasks</h2>
+          <p style="margin:0;color:var(--muted);">Search regression suites, smoke checks, API monitors, and more.</p>
+        </div>
+        <div class="filters">
+          <button data-testid="filter-status">Status: All</button>
+          <button data-testid="filter-owner">Owner: Any</button>
+          <button data-testid="filter-priority">Priority: High</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="search" id="task-search" name="task-search" placeholder="Search"
+               data-testid="task-search"/>
+        <button type="button" id="task-search-btn" data-testid="task-search-btn" style="background:#1d4ed8;color:#fff;">
+          Search
+        </button>
+        <button type="button" data-testid="clear-search-btn" style="background:#e2e8f0;">Clear</button>
+      </div>
+      <div class="search-results" id="search-result-pills" data-testid="search-pills"></div>
+    </section>
+
+    <section class="table-card" id="task-table-card">
+      <div class="search-header">
+        <div>
+          <h2>Active regression runs</h2>
+          <p style="margin:0;color:var(--muted);font-size:0.95rem;">Monitor start time, duration, environment, and status.</p>
+        </div>
+        <div class="filters">
+          <button data-testid="toggle-columns">Columns</button>
+          <button data-testid="export-csv">Export CSV</button>
+          <button data-testid="refresh-table">Refresh</button>
+        </div>
+      </div>
+      <table id="task-table" aria-label="Automation runs table">
+        <thead>
+        <tr>
+          <th scope="col">Suite</th>
+          <th scope="col">Environment</th>
+          <th scope="col">Owner</th>
+          <th scope="col">Started</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr data-testid="row-smoke">
+          <td>Smoke checkout flow</td>
+          <td>staging</td>
+          <td>alice</td>
+          <td>08:45</td>
+          <td><span class="status pending">waiting</span></td>
+          <td class="actions">
+            <button data-testid="btn-open-smoke">Open</button>
+            <button data-testid="btn-rerun-smoke">Re-run</button>
+          </td>
+        </tr>
+        <tr data-testid="row-ui-regression">
+          <td>UI regression (web)</td>
+          <td>production</td>
+          <td>diego</td>
+          <td>08:10</td>
+          <td><span class="status success">passed</span></td>
+          <td class="actions">
+            <button data-testid="btn-open-ui">Open</button>
+            <button data-testid="btn-share-ui">Share</button>
+          </td>
+        </tr>
+        <tr data-testid="row-api">
+          <td>API health monitors</td>
+          <td>production</td>
+          <td>sam</td>
+          <td>07:55</td>
+          <td><span class="status blocked">blocked</span></td>
+          <td class="actions">
+            <button data-testid="btn-open-api">Open</button>
+            <button data-testid="btn-debug-api">Debug</button>
+          </td>
+        </tr>
+        <tr data-testid="row-cross">
+          <td>Cross-browser cert</td>
+          <td>qa-grid</td>
+          <td>nina</td>
+          <td>07:40</td>
+          <td><span class="status pending">waiting</span></td>
+          <td class="actions">
+            <button data-testid="btn-open-cross">Open</button>
+            <button data-testid="btn-rerun-cross">Re-run</button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="insight-card" id="insights">
+      <h2>Insights & Activity</h2>
+      <div class="insight-grid">
+        <div class="metric-card" data-testid="metric-pass-rate">
+          <h3>7-day pass rate</h3>
+          <strong>93%</strong>
+        </div>
+        <div class="metric-card" data-testid="metric-duration">
+          <h3>Median duration</h3>
+          <strong>12m 45s</strong>
+        </div>
+        <div class="metric-card" data-testid="metric-failures">
+          <h3>Failures flagged</h3>
+          <strong>8</strong>
+        </div>
+        <div class="metric-card" data-testid="metric-coverage">
+          <h3>Coverage</h3>
+          <strong>84%</strong>
+        </div>
+      </div>
+
+      <div class="timeline" id="activity-timeline">
+        <div class="timeline-item">
+          <h3>08:55 • Smoke checkout flow pending approval</h3>
+          <p>Awaiting QA sign-off. Pending environment variables injection from Secrets Manager.</p>
+        </div>
+        <div class="timeline-item">
+          <h3>08:30 • UI regression passed</h3>
+          <p>Captured 6 screenshots. 1 flaky test quarantined automatically.</p>
+        </div>
+        <div class="timeline-item">
+          <h3>07:20 • API monitors blocked</h3>
+          <p>Rate limit exceeded on /v1/billing endpoint. Triggered webhook to #oncall channel.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  Need a headless-friendly flow? <a href="#docs">Follow the Selenium demo checklist.</a>
+</footer>
+
+<div class="modal-backdrop" id="task-modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+    <h3 id="task-modal-title">Create scripted task</h3>
+    <form id="task-form">
+      <div class="form-row">
+        <label for="task-title">Title</label>
+        <input id="task-title" name="title" type="text" placeholder="e.g. Checkout smoke" required
+               data-testid="modal-title"/>
+      </div>
+      <div class="form-row">
+        <div style="flex:1;">
+          <label for="task-owner">Owner</label>
+          <input id="task-owner" name="owner" type="text" placeholder="alice" required
+                 data-testid="modal-owner"/>
+        </div>
+        <div style="flex:1;">
+          <label for="task-env">Environment</label>
+          <select id="task-env" name="environment" data-testid="modal-environment">
+            <option value="staging">staging</option>
+            <option value="production">production</option>
+            <option value="qa-grid">qa-grid</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div style="flex:1;">
+          <label for="task-date">Next run</label>
+          <input id="task-date" name="nextRun" type="date" required data-testid="modal-date"/>
+        </div>
+        <div style="flex:1;">
+          <label for="task-priority">Priority</label>
+          <select id="task-priority" name="priority" data-testid="modal-priority">
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="task-notes">Notes</label>
+        <textarea id="task-notes" name="note" placeholder="Describe steps, browsers, preconditions..."
+                  data-testid="modal-notes"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" data-testid="modal-cancel">Cancel</button>
+        <button type="submit" style="background:var(--primary);color:#fff;" data-testid="modal-save">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="alert" aria-live="assertive">
+  <span id="toast-message">Task created successfully.</span>
+  <button type="button" id="toast-close" style="border:none;background:none;color:var(--primary);cursor:pointer;">×</button>
+</div>
+
+<script>
+  const searchInput = document.getElementById('task-search');
+  const searchBtn = document.getElementById('task-search-btn');
+  const clearBtn = document.querySelector('[data-testid="clear-search-btn"]');
+  const pills = document.getElementById('search-result-pills');
+  const modalBackdrop = document.getElementById('task-modal-backdrop');
+  const addTaskBtn = document.getElementById('btn-add-task');
+  const modalCancel = document.querySelector('[data-testid="modal-cancel"]');
+  const taskForm = document.getElementById('task-form');
+  const toast = document.getElementById('toast');
+  const toastClose = document.getElementById('toast-close');
+  const tableBody = document.querySelector('#task-table tbody');
+
+  function openModal() {
+    modalBackdrop.style.display = 'flex';
+    modalBackdrop.setAttribute('aria-hidden', 'false');
+    document.getElementById('task-title').focus();
+  }
+  function closeModal() {
+    modalBackdrop.style.display = 'none';
+    modalBackdrop.setAttribute('aria-hidden', 'true');
+    taskForm.reset();
+  }
+  function showToast(message) {
+    document.getElementById('toast-message').textContent = message;
+    toast.style.display = 'flex';
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 5000);
+  }
+
+  addTaskBtn.addEventListener('click', openModal);
+  modalCancel.addEventListener('click', closeModal);
+  modalBackdrop.addEventListener('click', (event) => {
+    if (event.target === modalBackdrop) {
+      closeModal();
+    }
+  });
+  toastClose.addEventListener('click', () => {
+    toast.style.display = 'none';
+  });
+
+  taskForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const title = document.getElementById('task-title').value.trim();
+    const env = document.getElementById('task-env').value;
+    const owner = document.getElementById('task-owner').value.trim();
+    const date = document.getElementById('task-date').value;
+    if (!title || !owner || !date) {
+      showToast('Missing fields – fill the form before saving.');
+      return;
+    }
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${title}</td>
+      <td>${env}</td>
+      <td>${owner}</td>
+      <td>${date}</td>
+      <td><span class="status pending">waiting</span></td>
+      <td class="actions">
+        <button>Open</button>
+        <button>Re-run</button>
+      </td>`;
+    tableBody.prepend(row);
+    closeModal();
+    showToast('Task created and queued successfully.');
+  });
+
+  searchBtn.addEventListener('click', runSearch);
+  searchInput.addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') {
+      runSearch();
+    }
+  });
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    pills.style.display = 'none';
+    pills.innerHTML = '';
+  });
+
+  function runSearch() {
+    const query = searchInput.value.trim();
+    if (!query) {
+      showToast('Enter keywords to search automation tasks.');
+      return;
+    }
+    pills.innerHTML = '';
+    const tokens = query.split(/\s+/).slice(0, 5);
+    tokens.forEach(token => {
+      const pill = document.createElement('span');
+      pill.className = 'pill';
+      pill.textContent = `tag:${token.toLowerCase()}`;
+      pills.appendChild(pill);
+    });
+    pills.style.display = 'flex';
+    document.getElementById('task-table-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+</script>
+</body>
+</html>

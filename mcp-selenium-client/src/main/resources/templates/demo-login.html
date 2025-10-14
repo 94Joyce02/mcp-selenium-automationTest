@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>MCP Demo Portal - Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --primary: #2563eb;
+      --accent: #ea580c;
+      --border: #d1d5db;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #eef2ff, #fdf2f8);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+    .card {
+      width: min(640px, 100%);
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      padding: 2.5rem 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: -60% 60% 60% -60%;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(234, 88, 12, 0.15));
+      transform: rotate(4deg);
+      pointer-events: none;
+    }
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 2.1rem;
+      letter-spacing: -0.02em;
+    }
+    p.subtitle {
+      margin: 0 0 2.5rem;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.93rem;
+    }
+    input[type="email"],
+    input[type="password"],
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      font-size: 1rem;
+      transition: border 0.2s ease, box-shadow 0.2s ease;
+      background: rgba(255, 255, 255, 0.9);
+    }
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+    }
+    .toggle {
+      position: absolute;
+      top: 2.55rem;
+      right: 0.75rem;
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .flex-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .flex-row label.inline {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .flex-row label.inline input {
+      width: auto;
+    }
+    button.primary {
+      width: 100%;
+      padding: 0.95rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), #4338ca);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    button.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 32px rgba(37, 99, 235, 0.3);
+    }
+    .divider {
+      margin: 2rem 0;
+      position: relative;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .divider::before,
+    .divider::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 35%;
+      height: 1px;
+      background: var(--border);
+    }
+    .divider::before {
+      left: 0;
+    }
+    .divider::after {
+      right: 0;
+    }
+    .providers {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+    .providers button {
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.8);
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+    .providers button:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .status-banner {
+      margin-top: 1.5rem;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      background: rgba(34, 197, 94, 0.12);
+      color: #15803d;
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+    }
+    .status-banner.error {
+      background: rgba(248, 113, 113, 0.18);
+      color: #b91c1c;
+    }
+    .next-actions {
+      margin-top: 1.5rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .next-actions a {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .next-actions a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <main class="card" id="login-card">
+    <h1 data-testid="login-heading">Project Mercury Console</h1>
+    <p class="subtitle">Sign in to configure automation tasks and manage Selenium demo workflows.</p>
+    <form id="login-form" aria-label="Demo login form">
+      <div class="form-group">
+        <label for="email-input">Work Email</label>
+        <input id="email-input" name="email" type="email" autocomplete="username"
+               placeholder="you@example.com" required data-testid="login-email"/>
+      </div>
+      <div class="form-group">
+        <label for="password-input">Password</label>
+        <input id="password-input" name="password" type="password" autocomplete="current-password"
+               placeholder="At least 10 characters" required minlength="10" data-testid="login-password"/>
+        <button type="button" class="toggle" id="toggle-password" aria-label="Toggle password visibility">
+          Show
+        </button>
+      </div>
+      <div class="form-group">
+        <label for="env-select">Choose workspace</label>
+        <select id="env-select" name="workspace" data-testid="workspace-select">
+          <option value="staging">Staging Automation Lab</option>
+          <option value="production">Production Monitor</option>
+          <option value="playground">Playground Sandbox</option>
+        </select>
+      </div>
+      <div class="flex-row">
+        <label class="inline">
+          <input type="checkbox" id="remember-checkbox" data-testid="remember-me"/>
+          Remember me for 30 days
+        </label>
+        <a href="#reset" id="forgot-link" style="color:var(--primary);font-weight:600;">Forgot access?</a>
+      </div>
+      <div class="flex-row">
+        <label class="inline">
+          <input type="checkbox" id="otp-checkbox" data-testid="otp-toggle"/>
+          Use one-time passcode
+        </label>
+        <input type="text" id="otp-input" placeholder="Enter OTP (optional)" style="flex:1;display:none;"
+               data-testid="otp-input"/>
+      </div>
+
+      <div class="form-group">
+        <label for="signin-note">Login note</label>
+        <input id="signin-note" name="note" type="text"
+               placeholder="e.g. Nightly regression suite" data-testid="login-note"/>
+      </div>
+
+      <button type="submit" class="primary" data-testid="submit-login">Sign in</button>
+    </form>
+
+    <div class="divider">or continue with</div>
+    <div class="providers">
+      <button type="button" data-testid="provider-google">🔐 Google SSO</button>
+      <button type="button" data-testid="provider-github">🐙 GitHub</button>
+      <button type="button" data-testid="provider-sso">🏢 Okta SSO</button>
+    </div>
+
+    <div id="status-banner" class="status-banner" role="status" aria-live="polite"></div>
+    <div id="next-actions" class="next-actions">
+      <a href="/demo/dashboard" data-testid="go-dashboard">Continue to automation dashboard</a>
+      <a href="#docs" data-testid="view-docs">Review onboarding checklist</a>
+    </div>
+  </main>
+
+  <script>
+    const toggleBtn = document.getElementById('toggle-password');
+    const passwordInput = document.getElementById('password-input');
+    const otpCheckbox = document.getElementById('otp-checkbox');
+    const otpInput = document.getElementById('otp-input');
+    const form = document.getElementById('login-form');
+    const statusBanner = document.getElementById('status-banner');
+    const nextActions = document.getElementById('next-actions');
+
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      toggleBtn.textContent = isPassword ? 'Hide' : 'Show';
+      passwordInput.focus();
+    });
+
+    otpCheckbox.addEventListener('change', (event) => {
+      otpInput.style.display = event.target.checked ? 'block' : 'none';
+      if (event.target.checked) {
+        otpInput.focus();
+      }
+    });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const email = document.getElementById('email-input').value.trim();
+      const password = passwordInput.value.trim();
+      if (!email || password.length < 6) {
+        statusBanner.textContent = 'Please provide valid credentials to continue.';
+        statusBanner.classList.add('error');
+        statusBanner.style.display = 'flex';
+        nextActions.style.display = 'none';
+        return;
+      }
+
+      statusBanner.textContent = 'Welcome back! Redirecting you to the automation dashboard...';
+      statusBanner.classList.remove('error');
+      statusBanner.style.display = 'flex';
+      nextActions.style.display = 'flex';
+      statusBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // surface provider buttons for scripting
+    document.querySelectorAll('.providers button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        statusBanner.textContent = `Simulated login via ${btn.textContent.trim()}. Provide credentials to continue.`;
+        statusBanner.classList.add('error');
+        statusBanner.style.display = 'flex';
+        nextActions.style.display = 'none';
+      });
+    });
+  </script>
+</body>
+</html>

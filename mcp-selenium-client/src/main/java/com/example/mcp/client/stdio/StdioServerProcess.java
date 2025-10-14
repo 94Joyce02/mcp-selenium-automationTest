@@ -1,18 +1,23 @@
 package com.example.mcp.client.stdio;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.*;
 
 /** 管理底层 stdio 进程；支持惰性启动/重启/单步执行 */
 @Component
 public class StdioServerProcess implements Closeable {
+
+    private static final Logger log = LoggerFactory.getLogger(StdioServerProcess.class);
 
     private final List<String> command;
     private final String clientId;
@@ -21,6 +26,7 @@ public class StdioServerProcess implements Closeable {
     private volatile Process proc;
     private volatile BufferedWriter toServer;
     private volatile BufferedReader fromServer;
+    private volatile Thread stderrDrainer;
 
     // ✅ 用最简单、安全的方式注入；其它组合逻辑放到构造方法里处理
     public StdioServerProcess(
@@ -32,22 +38,28 @@ public class StdioServerProcess implements Closeable {
             @Value("${mcp.clientId:}") String clientIdFromCfg
     ) {
         // 优先：数组方式 mcp.server.command.list: [ "java", "-jar", "...", "--opt=..." ]
-        String[] list = env.getProperty("mcp.server.command.list", String[].class);
+        List<String> list = Binder.get(env)
+                .bind("mcp.server.command.list", Bindable.listOf(String.class))
+                .orElseGet(Collections::emptyList);
 
-        if (list != null && list.length > 0) {
-            this.command = Arrays.asList(list);
+        if (!list.isEmpty()) {
+            log.info("Using mcp.server.command.list from configuration ({} entries)", list.size());
+            this.command = List.copyOf(list);
         } else if (cmdCsv != null && !cmdCsv.isBlank()) {
             // 其次：逗号分隔（你 yml 里就是这种）
             // 注意逗号后常有空格，记得 trim
+            log.info("Using mcp.server.command (CSV) from configuration");
             this.command = Arrays.stream(cmdCsv.split(","))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
                     .toList();
         } else if (legacyCmdLine != null && !legacyCmdLine.isBlank()) {
             // 兜底：旧字段空格分隔
+            log.info("Using mcp.stdio.command (legacy) from configuration");
             this.command = Arrays.asList(legacyCmdLine.trim().split("\\s+"));
         } else {
             // 最终兜底：直接找 mcp-selenium 全局命令
+            log.warn("No server command configured; defaulting to ~/.npm-global/bin/mcp-selenium --stdio");
             this.command = List.of(System.getProperty("user.home") + "/.npm-global/bin/mcp-selenium", "--stdio");
         }
 
@@ -61,11 +73,18 @@ public class StdioServerProcess implements Closeable {
 
     private synchronized void ensureStarted() throws IOException {
         if (proc != null && proc.isAlive()) return;
+        log.info("Starting MCP STDIO server: {}", String.join(" ", this.command));
         ProcessBuilder pb = new ProcessBuilder(this.command);
         pb.redirectErrorStream(false);
         proc = pb.start();
+        Process current = proc;
         toServer   = new BufferedWriter(new OutputStreamWriter(proc.getOutputStream(), StandardCharsets.UTF_8));
         fromServer = new BufferedReader(new InputStreamReader(proc.getInputStream(),  StandardCharsets.UTF_8));
+        drainStderr(proc.getErrorStream());
+        current.onExit().thenRun(() -> {
+            int exit = current.exitValue();
+            log.warn("MCP STDIO server exited with code {}", exit);
+        });
     }
 
     public synchronized void restart() throws IOException {
@@ -73,16 +92,28 @@ public class StdioServerProcess implements Closeable {
         ensureStarted();
     }
 
-    public Map<String, Object> rpcExecuteOne(Map<String, Object> action, String sessionId, int stepIndex, long timeoutMs) throws IOException {
+    public Map<String, Object> rpcExecuteOne(Map<String, Object> action, String sessionId, int stepIndex, boolean sessionDone, long timeoutMs) throws IOException {
         ensureStarted();
         Map<String, Object> req = new HashMap<>();
         req.put("method", "execute");
+        req.put("clientId", clientId);
         req.put("sessionId", sessionId);
         req.put("stepIndex", stepIndex);
-        req.put("clientId", clientId);
-        req.put("action", action);
+        req.put("sessionDone", sessionDone);
+        req.put("actions", List.of(action));
 
-        String line = sendAndReadLine(req, timeoutMs);
+        long effectiveTimeout = timeoutMs;
+        Object timeoutHint = action == null ? null : action.get("timeoutMs");
+        if (timeoutHint instanceof Number n) {
+            effectiveTimeout = Math.max(timeoutMs, n.longValue());
+        } else if (timeoutHint instanceof String s) {
+            try {
+                effectiveTimeout = Math.max(timeoutMs, Long.parseLong(s));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        String line = sendAndReadLine(req, effectiveTimeout);
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> resp = mapper.readValue(line, Map.class);
@@ -94,7 +125,11 @@ public class StdioServerProcess implements Closeable {
 
     public Map<String, Object> rpcExecute(List<Map<String, Object>> actions) throws IOException {
         ensureStarted();
-        Map<String, Object> req = Map.of("method", "execute", "actions", actions, "clientId", clientId);
+        Map<String, Object> req = new HashMap<>();
+        req.put("method", "execute");
+        req.put("clientId", clientId);
+        req.put("actions", actions);
+        req.put("sessionDone", true);
         String line = sendAndReadLine(req, 60_000);
         try {
             @SuppressWarnings("unchecked")
@@ -107,6 +142,9 @@ public class StdioServerProcess implements Closeable {
 
     private String sendAndReadLine(Map<String, Object> req, long timeoutMs) throws IOException {
         String json = mapper.writeValueAsString(req);
+        if (log.isDebugEnabled()) {
+            log.debug("→ STDIO {}", json);
+        }
         toServer.write(json);
         toServer.newLine();
         toServer.flush();
@@ -114,30 +152,28 @@ public class StdioServerProcess implements Closeable {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (true) {
             if (System.currentTimeMillis() > deadline) {
+                log.error("STDIO server timed out ({}ms) waiting for response", timeoutMs);
                 throw new IOException("Server timed out while waiting response");
             }
             if (!fromServer.ready()) {
                 if (proc != null && !proc.isAlive()) {
-                    String err = readAll(proc.getErrorStream());
-                    throw new IOException("Server process exited. STDERR:\n" + err);
+                    int exitValue = proc.exitValue();
+                    throw new IOException("Server process exited unexpectedly (exitCode=" + exitValue + "). Check server logs.");
                 }
                 try { Thread.sleep(10); } catch (InterruptedException ignored) {}
                 continue;
             }
             String line = fromServer.readLine();
             if (line == null) {
-                String err = readAll(proc.getErrorStream());
-                throw new IOException("Server closed output (EOF). STDERR:\n" + err);
+                throw new IOException("Server closed output (EOF). Check server logs.");
             }
             line = line.trim();
             if (line.isEmpty()) continue;
+            if (log.isDebugEnabled()) {
+                log.debug("← STDIO {}", line);
+            }
             return line;
         }
-    }
-
-    private static String readAll(InputStream is) throws IOException {
-        if (is == null) return "";
-        return new String(is.readAllBytes(), StandardCharsets.UTF_8);
     }
 
     @Override
@@ -148,8 +184,35 @@ public class StdioServerProcess implements Closeable {
             try { proc.getErrorStream().close(); } catch (Exception ignored) {}
             proc.destroy();
         }
+        if (stderrDrainer != null) {
+            stderrDrainer.interrupt();
+        }
         proc = null;
         toServer = null;
         fromServer = null;
+        stderrDrainer = null;
+    }
+
+    private synchronized void drainStderr(InputStream errStream) {
+        if (stderrDrainer != null && stderrDrainer.isAlive()) {
+            return;
+        }
+        stderrDrainer = new Thread(() -> {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(errStream, StandardCharsets.UTF_8))) {
+                String line;
+                while (!Thread.currentThread().isInterrupted() && (line = br.readLine()) != null) {
+                    String trimmed = line.trim();
+                    if (!trimmed.isEmpty()) {
+                        log.warn("[STDIO server] {}", trimmed);
+                    }
+                }
+            } catch (IOException e) {
+                if (!Thread.currentThread().isInterrupted()) {
+                    log.debug("STDIO server stderr reader stopped", e);
+                }
+            }
+        }, "mcp-stdio-server-stderr");
+        stderrDrainer.setDaemon(true);
+        stderrDrainer.start();
     }
 }

@@ -22,7 +22,7 @@ mcp:
       list:
         - java
         - -jar
-        - /Users/path/mcp-selenium-server-selenium-manager/target/mcp-selenium-server-1.0.0.jar
+        - /Users/jiangjiangyingxia/Documents/mcp-selenium-automationTest/mcp-selenium-server/target/mcp-selenium-server-1.0.0.jar
         - --spring.main.web-application-type=none
         - --spring.main.banner-mode=off
 
@@ -47,5 +47,6 @@ spring:
 logging:
   level:
     root: info
+    com.example.mcp.client.stdio: debug
     # 如需查看与 LLM 的交互细节，临时打开：
     #org.springframework.ai: DEBUG

@@ -10,4 +10,14 @@ public class WebPage {
     public String index() {
         return "index";
     }
+
+    @GetMapping("/demo/login")
+    public String demoLogin() {
+        return "demo-login";
+    }
+
+    @GetMapping("/demo/dashboard")
+    public String demoDashboard() {
+        return "demo-dashboard";
+    }
 }
