@@ -17,18 +17,45 @@
   <textarea id="prompt" placeholder="Enter instruction...">launch google chrome, launch to http://example.com, then screenshot</textarea>
   <br/><br/>
   <button onclick="run()">Run</button>
+  <h3>Selector Hints</h3>
+  <pre id="hints"></pre>
   <h3>Response</h3>
   <pre id="resp"></pre>
   <script>
     async function run(){
       const prompt = document.getElementById('prompt').value;
+      const hintsEl = document.getElementById('hints');
+      const respEl = document.getElementById('resp');
+      hintsEl.textContent = 'Loading selector hints...';
+      respEl.textContent = '';
+      let selectorHints = [];
+      try {
+        const hintResponse = await fetch('/api/assist/selector-hints', {
+          method:'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({prompt})
+        });
+        if (hintResponse.ok) {
+          const hintJson = await hintResponse.json();
+          selectorHints = Array.isArray(hintJson.hints) ? hintJson.hints : [];
+          hintsEl.textContent = JSON.stringify(hintJson, null, 2);
+        } else {
+          hintsEl.textContent = 'Failed to load hints: ' + hintResponse.status;
+        }
+      } catch (e) {
+        hintsEl.textContent = 'Failed to load hints: ' + e.message;
+      }
+      const body = {prompt};
+      if (selectorHints.length) {
+        body.selectorHints = selectorHints;
+      }
       const r = await fetch('/api/execute', {
         method:'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({prompt})
+        body: JSON.stringify(body)
       });
       const j = await r.json();
-      document.getElementById('resp').textContent = JSON.stringify(j, null, 2);
+      respEl.textContent = JSON.stringify(j, null, 2);
     }
   </script>
 </body>
