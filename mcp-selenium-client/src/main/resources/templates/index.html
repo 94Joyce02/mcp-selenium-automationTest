@@ -1,61 +1,614 @@
 <!doctype html>
-<html>
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8"/>
   <title>MCP Selenium Client</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <style>
-    body { font-family: system-ui, Arial; margin: 2rem; }
-    textarea { width: 100%; height: 8rem; }
-    pre { background: #f6f8fa; padding: 1rem; overflow: auto; }
-    button { padding: .6rem 1rem; }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 214, 165, 0.45), transparent 56%),
+        radial-gradient(circle at 80% 0%, rgba(171, 222, 255, 0.45), transparent 60%),
+        radial-gradient(circle at 20% 90%, rgba(255, 226, 248, 0.35), transparent 60%),
+        #f6f7fb;
+      color: #1f2933;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 24px;
+    }
+    .app {
+      width: 100%;
+      max-width: 1080px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 24px;
+      padding: 32px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: 0 30px 70px -55px rgba(99, 102, 241, 0.65);
+      background-image: linear-gradient(145deg, rgba(244, 244, 255, 0.7), rgba(255, 255, 255, 0.92));
+    }
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #1f2a44;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .ai-icon-list {
+      display: flex;
+      gap: 12px;
+    }
+    .ai-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(160deg, rgba(96, 165, 250, 0.6), rgba(168, 85, 247, 0.65));
+      box-shadow: 0 18px 36px -28px rgba(79, 70, 229, 0.8);
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .ai-icon::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent 60%);
+      opacity: 0.7;
+    }
+    .ai-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: #ffffff;
+      position: relative;
+      z-index: 1;
+    }
+    .corner-robot {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      width: 120px;
+      height: 120px;
+      border-radius: 28px;
+      background: linear-gradient(155deg, rgba(255, 255, 255, 0.96), rgba(214, 232, 255, 0.88));
+      box-shadow: 0 28px 58px -36px rgba(76, 29, 149, 0.7);
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+    }
+    .corner-robot svg {
+      width: 88px;
+      height: 88px;
+    }
+    .header p {
+      margin: 0;
+      color: #66728a;
+      line-height: 1.6;
+    }
+    code {
+      background: rgba(99, 102, 241, 0.12);
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: #4338ca;
+    }
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      resize: vertical;
+      font-size: 15px;
+      line-height: 1.6;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      background: rgba(255, 255, 255, 0.92);
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.18);
+    }
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      padding: 0.85rem 1.8rem;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #60a5fa, #a855f7);
+      color: #ffffff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 32px -22px rgba(99, 102, 241, 0.55);
+    }
+    button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+    .status {
+      font-size: 0.95rem;
+      color: #6b21a8;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.95fr) minmax(420px, 1.35fr);
+      gap: 26px;
+    }
+    .panel {
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 20px;
+      padding: 26px;
+      border: 1px solid rgba(203, 213, 225, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 22px 48px -40px rgba(15, 23, 42, 0.38);
+      position: relative;
+      overflow: hidden;
+      background-image: linear-gradient(160deg, rgba(240, 246, 255, 0.85), rgba(255, 241, 246, 0.75));
+    }
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(96, 165, 250, 0.18), rgba(248, 250, 252, 0));
+      pointer-events: none;
+    }
+    .panel > * {
+      position: relative;
+      z-index: 1;
+    }
+    .panel h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      color: #374151;
+    }
+    pre {
+      margin: 0;
+      background: rgba(246, 248, 255, 0.95);
+      color: #374151;
+      border-radius: 14px;
+      padding: 16px 18px;
+      overflow: auto;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      max-height: 340px;
+      box-shadow: inset 0 0 0 1px rgba(191, 219, 254, 0.5);
+    }
+    @media (max-width: 640px) {
+      body {
+        padding: 32px 16px;
+      }
+      .card {
+        padding: 22px;
+      }
+      .header h1 {
+        font-size: 1.6rem;
+      }
+      .results {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .corner-robot {
+        width: 84px;
+        height: 84px;
+        top: 16px;
+        left: 16px;
+        border-radius: 24px;
+      }
+      .corner-robot svg {
+        width: 64px;
+        height: 64px;
+      }
+    }
   </style>
 </head>
-<body>
-  <h1>MCP Selenium Client</h1>
-  <p>示例：<code>launch google chrome, launch to http://example.com, then screenshot</code></p>
-  <textarea id="prompt" placeholder="Enter instruction...">launch google chrome, launch to http://example.com, then screenshot</textarea>
-  <br/><br/>
-  <button onclick="run()">Run</button>
-  <h3>Selector Hints</h3>
-  <pre id="hints"></pre>
-  <h3>Response</h3>
-  <pre id="resp"></pre>
+  <body>
+  <div class="corner-robot" aria-hidden="true">
+    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="botBody" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#d8e4ff" />
+          <stop offset="100%" stop-color="#b8c7ff" />
+        </linearGradient>
+        <linearGradient id="botGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#a855f7" stop-opacity="0.7" />
+          <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.7" />
+        </linearGradient>
+      </defs>
+      <rect x="26" y="30" width="68" height="58" rx="20" fill="url(#botBody)" stroke="#4338ca" stroke-width="3"/>
+      <rect x="39" y="16" width="42" height="20" rx="8" fill="url(#botGlow)" stroke="#4338ca" stroke-width="2.5"/>
+      <circle cx="60" cy="10" r="6" fill="#4338ca"/>
+      <line x1="60" y1="10" x2="60" y2="16" stroke="#4338ca" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="45" cy="54" r="9" fill="#ffffff" stroke="#4338ca" stroke-width="2"/>
+      <circle cx="75" cy="54" r="9" fill="#ffffff" stroke="#4338ca" stroke-width="2"/>
+      <circle cx="45" cy="54" r="4" fill="#4338ca"/>
+      <circle cx="75" cy="54" r="4" fill="#4338ca"/>
+      <path d="M42 72c5 8 31 8 36 0" stroke="#4338ca" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <rect x="20" y="48" width="12" height="26" rx="6" fill="url(#botGlow)" stroke="#4338ca" stroke-width="2"/>
+      <rect x="88" y="48" width="12" height="26" rx="6" fill="url(#botGlow)" stroke="#4338ca" stroke-width="2"/>
+      <circle cx="26" cy="84" r="6" fill="#4338ca"/>
+      <circle cx="94" cy="84" r="6" fill="#4338ca"/>
+      <rect x="44" y="88" width="32" height="14" rx="7" fill="url(#botGlow)" stroke="#4338ca" stroke-width="2"/>
+    </svg>
+  </div>
+  <main class="app">
+    <section class="card">
+      <div class="header">
+        <div class="title-row">
+          <h1>MCP Selenium Client</h1>
+          <div class="ai-icon-list" aria-hidden="true">
+            <div class="ai-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 2a5 5 0 0 0-5 5v1.26A4.5 4.5 0 0 0 5 12v1a2 2 0 0 0 2 2h1v1.5A2.5 2.5 0 0 0 10.5 19H11v1a2 2 0 0 0 4 0v-1h.5A2.5 2.5 0 0 0 18 16.5V15h1a2 2 0 0 0 2-2v-1a4.5 4.5 0 0 0-2-3.74V7a5 5 0 0 0-5-5h-2Z"/>
+              </svg>
+            </div>
+            <div class="ai-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 12a8 8 0 0 1 14.59-4.59A3.5 3.5 0 0 1 22 10.5a3.5 3.5 0 0 1-3 3.46V14a4 4 0 0 1-4 4h-1.18a3 3 0 0 1-5.64 0H7a3 3 0 0 1-3-3v-.09A3.5 3.5 0 0 1 4 12Z"/>
+                <circle cx="9" cy="10.5" r="1.25"/>
+                <circle cx="15" cy="10.5" r="1.25"/>
+                <path d="M9.75 15c1 .67 3.5.67 4.5 0" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <p>输入一段描述来驱动自动化。示例：<code>launch google chrome, launch to http://example.com, then screenshot</code></p>
+      </div>
+      <textarea id="prompt" placeholder="请输入自动化指令...">launch google chrome, launch to http://example.com, then screenshot</textarea>
+      <div class="actions">
+        <button id="runBtn" type="button">执行任务</button>
+        <span id="status" class="status"></span>
+      </div>
+    </section>
+    <section class="results">
+      <div class="panel">
+        <h3>Selector Hints</h3>
+        <pre id="hints">尚未请求 Selector Hints。</pre>
+      </div>
+      <div class="panel">
+        <h3>Response</h3>
+        <pre id="resp">等待执行结果...</pre>
+      </div>
+    </section>
+  </main>
   <script>
-    async function run(){
-      const prompt = document.getElementById('prompt').value;
-      const hintsEl = document.getElementById('hints');
-      const respEl = document.getElementById('resp');
+    const runBtn = document.getElementById('runBtn');
+    const statusEl = document.getElementById('status');
+    const hintsEl = document.getElementById('hints');
+    const respEl = document.getElementById('resp');
+
+    runBtn.addEventListener('click', run);
+
+    async function run() {
+      const prompt = document.getElementById('prompt').value.trim();
+      if (!prompt) {
+        statusEl.textContent = '请输入要执行的指令。';
+        return;
+      }
+
+      runBtn.disabled = true;
+      statusEl.textContent = '正在请求 Selector Hints...';
       hintsEl.textContent = 'Loading selector hints...';
-      respEl.textContent = '';
+      respEl.textContent = 'Waiting for execution...';
+
       let selectorHints = [];
       try {
         const hintResponse = await fetch('/api/assist/selector-hints', {
-          method:'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({prompt})
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
         });
         if (hintResponse.ok) {
           const hintJson = await hintResponse.json();
           selectorHints = Array.isArray(hintJson.hints) ? hintJson.hints : [];
           hintsEl.textContent = JSON.stringify(hintJson, null, 2);
+          statusEl.textContent = 'Selector Hints 获取成功，正在执行...';
         } else {
           hintsEl.textContent = 'Failed to load hints: ' + hintResponse.status;
+          statusEl.textContent = 'Selector Hints 获取失败，继续执行任务。';
         }
       } catch (e) {
         hintsEl.textContent = 'Failed to load hints: ' + e.message;
+        statusEl.textContent = 'Selector Hints 获取失败，继续执行任务。';
       }
-      const body = {prompt};
-      if (selectorHints.length) {
-        body.selectorHints = selectorHints;
+
+      try {
+        const body = selectorHints.length ? { prompt, selectorHints } : { prompt };
+        const response = await fetch('/api/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          respEl.textContent = '执行失败：' + response.status + ' ' + response.statusText;
+          statusEl.textContent = '执行失败，请检查。';
+          return;
+        }
+
+        const payload = await response.json();
+        respEl.textContent = renderExecutionSummary(payload);
+        statusEl.textContent = payload && payload.ok === true
+          ? '测试通过。'
+          : '测试失败。';
+      } catch (e) {
+        respEl.textContent = 'Failed to execute request: ' + e.message;
+        statusEl.textContent = '执行失败，请重试。';
+      } finally {
+        runBtn.disabled = false;
       }
-      const r = await fetch('/api/execute', {
-        method:'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(body)
-      });
-      const j = await r.json();
-      respEl.textContent = JSON.stringify(j, null, 2);
+    }
+
+    function renderExecutionSummary(payload) {
+      if (!payload || typeof payload !== 'object') {
+        return '未收到任何响应。';
+      }
+
+      const lines = [];
+      if (payload.ok === true) {
+        lines.push('✅ 测试通过：所有步骤执行成功。');
+      } else if (payload.ok === false) {
+        lines.push('⚠️ 测试失败：部分步骤执行未成功，请查看具体步骤。');
+      }
+
+      const steps = Array.isArray(payload.steps) ? payload.steps : null;
+      const actions = Array.isArray(payload.actions) ? payload.actions : null;
+
+      if (steps && steps.length) {
+        steps.forEach((step, idx) => {
+          const action = actions && actions[idx] ? actions[idx] : null;
+          lines.push(formatStepSummary(idx, step, action));
+        });
+      } else if (payload.result) {
+        lines.push(...formatResultEnvelope(payload.result));
+      } else if (payload.error) {
+        lines.push('错误：' + payload.error);
+      }
+
+      if (!lines.length) {
+        lines.push(JSON.stringify(payload, null, 2));
+      }
+      return lines.join('\n');
+    }
+
+    function formatStepSummary(index, step, action) {
+      const { key, value } = extractResult(step);
+      const actionType = (action && action.type) || key || '';
+      const ok = isStepOk(step);
+      const actionText = describeAction(actionType, action, value);
+      const detailText = buildDetail(value);
+      const errText = ok ? '' : extractError(step);
+
+      const parts = [
+        `步骤 ${index + 1}:`,
+        actionText || '执行操作',
+        '-',
+        ok ? '成功' : '失败'
+      ];
+
+      if (detailText) {
+        parts.push(`（${detailText}）`);
+      }
+      if (errText) {
+        parts.push(`原因：${errText}`);
+      }
+      return parts.join(' ');
+    }
+
+    function formatResultEnvelope(result) {
+      if (!result || typeof result !== 'object') {
+        return ['未能解析执行结果。'];
+      }
+      const ok = result.ok === true || (typeof result.status === 'string' && result.status.toLowerCase() === 'ok');
+      const lines = [
+        ok ? '✅ 测试通过。' : '⚠️ 测试失败。'
+      ];
+      const data = result.data && typeof result.data === 'object' ? result.data : null;
+      const resultMap = data && data.results && typeof data.results === 'object' ? data.results : null;
+
+      if (resultMap) {
+        let idx = 0;
+        Object.entries(resultMap).forEach(([type, value]) => {
+          idx += 1;
+          const detail = buildDetail(value);
+          const actionText = describeAction(type, null, value);
+          const base = actionText || `执行 ${type}`;
+          lines.push(`步骤 ${idx}: ${base} ${ok ? '成功' : '已完成'}${detail ? `（${detail}）` : ''}`);
+        });
+      } else if (result.message) {
+        lines.push(result.message);
+      }
+      return lines;
+    }
+
+    function describeAction(type, action, value) {
+      const note = action && action.note ? `（${action.note}）` : '';
+      switch ((type || '').toLowerCase()) {
+        case 'open_browser': {
+          const browser = action && action.browser ? action.browser : '浏览器';
+          const headless = action && action.headless ? '（无头模式）' : '';
+          return `打开${browser}${headless}${note}`;
+        }
+        case 'goto': {
+          const url = (action && action.url) || value || '';
+          return url ? `访问 ${url}${note}` : `访问目标页面${note}`;
+        }
+        case 'click': {
+          const target = formatSelector(action);
+          return target ? `点击元素 ${target}${note}` : `点击目标元素${note}`;
+        }
+        case 'type': {
+          const target = formatSelector(action);
+          const text = action && action.text ? `输入 "${action.text}"` : '输入文本';
+          return target ? `${text} 到 ${target}${note}` : `${text}${note}`;
+        }
+        case 'wait': {
+          const ms = action && action.timeoutMs ? action.timeoutMs : value;
+          return `等待 ${ms || 0} ms${note}`;
+        }
+        case 'wait_for_selector': {
+          const target = formatSelector(action) || (typeof value === 'string' ? value : '');
+          return target ? `等待元素出现 ${target}${note}` : `等待指定元素${note}`;
+        }
+        case 'scroll_by': {
+          const coords = Array.isArray(value) ? value.join(', ') : `${action?.x || 0}, ${action?.y || 0}`;
+          return `滚动窗口 (${coords})${note}`;
+        }
+        case 'scroll_to': {
+          const target = formatSelector(action);
+          return target ? `滚动至元素 ${target}${note}` : `滚动到目标位置${note}`;
+        }
+        case 'key_press': {
+          const key = action && action.text ? action.text : value;
+          return key ? `触发按键 ${key}${note}` : `触发按键${note}`;
+        }
+        case 'find_text': {
+          const text = action && action.text ? action.text : '';
+          return text ? `查找文本 "${text}"${note}` : `查找指定文本${note}`;
+        }
+        case 'screenshot':
+          return `截取页面截图${note}`;
+        case 'download_link': {
+          const target = formatSelector(action);
+          return target ? `下载链接 ${target}${note}` : `下载链接${note}`;
+        }
+        case 'get_title':
+          return `获取页面标题${note}`;
+        case 'get_current_url':
+          return `获取当前地址${note}`;
+        case 'close':
+          return `关闭当前窗口${note}`;
+        case 'quit':
+          return `退出浏览器${note}`;
+        case 'sense_elements':
+          return `感知页面可交互元素${note}`;
+        default: {
+          if (type) {
+            return `执行 ${type} 操作${note}`;
+          }
+          if (action && action.value) {
+            return `${action.value}${note}`;
+          }
+          return '';
+        }
+      }
+    }
+
+    function buildDetail(value) {
+      if (value == null || value === 'ok') {
+        return '';
+      }
+      if (typeof value === 'string') {
+        return value;
+      }
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+      }
+      if (Array.isArray(value)) {
+        return value.map(item => (typeof item === 'object' ? JSON.stringify(item) : String(item))).join(', ');
+      }
+      return JSON.stringify(value, null, 2);
+    }
+
+    function extractResult(step) {
+      if (!step || typeof step !== 'object') {
+        return { key: null, value: null };
+      }
+      const data = step.data && typeof step.data === 'object' ? step.data : null;
+      const resultMap = data && data.results && typeof data.results === 'object'
+        ? data.results
+        : null;
+      if (resultMap) {
+        const keys = Object.keys(resultMap);
+        if (keys.length > 0) {
+          const key = keys[0];
+          return { key, value: resultMap[key] };
+        }
+      }
+      return { key: null, value: null };
+    }
+
+    function isStepOk(step) {
+      if (!step || typeof step !== 'object') {
+        return false;
+      }
+      if (step.ok === true) {
+        return true;
+      }
+      if (step.ok === false) {
+        return false;
+      }
+      const status = typeof step.status === 'string' ? step.status.toLowerCase() : '';
+      if (status) {
+        if (status === 'ok' || status === 'success') {
+          return true;
+        }
+        if (status === 'error' || status === 'fail' || status === 'failed') {
+          return false;
+        }
+      }
+      if (step.error) {
+        return false;
+      }
+      return true;
+    }
+
+    function extractError(step) {
+      if (!step || typeof step !== 'object') {
+        return '';
+      }
+      if (step.error) {
+        return String(step.error);
+      }
+      if (step.message && !isStepOk(step)) {
+        return String(step.message);
+      }
+      const data = step.data && typeof step.data === 'object' ? step.data : null;
+      if (data && data.error) {
+        return String(data.error);
+      }
+      return '';
+    }
+
+    function formatSelector(action) {
+      if (!action || typeof action !== 'object' || !action.selector) {
+        return '';
+      }
+      const selector = String(action.selector);
+      return selector.length > 60 ? selector.slice(0, 57) + '...' : selector;
     }
   </script>
 </body>

@@ -89,6 +89,7 @@ public class CommandController {
                     resp.put("sessionId", sessionId);
                 }
                 resp.put("steps", steps);
+                resp.put("actions", actions);
                 return resp;
             } catch (Exception e) {
                 Map<String, Object> resp = new LinkedHashMap<>();
@@ -103,7 +104,7 @@ public class CommandController {
 
         // 4) HTTP 场景：仍可一次性提交（或你也能实现 HttpInvoker.executeOne + 步进）
         Map<String, Object> oneShot = invoker.execute(actions);
-        return Map.of("ok", isOk(oneShot), "result", oneShot);
+        return Map.of("ok", isOk(oneShot), "result", oneShot, "actions", actions);
     }
 
     private boolean isOk(Map<String, Object> resp) {
